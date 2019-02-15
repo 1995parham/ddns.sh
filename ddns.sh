@@ -10,9 +10,14 @@
 
 # start.sh
 program_name=$0
+tmpfile=""
 
 trap '_end' INT
 _end() {
+        if [ $tmpfile ]; then
+                echo "removes $tmpfile"
+                rm $tmpfile
+        fi
         echo "See you later :) [you signal start.sh execuation]"
         exit
 }
@@ -42,9 +47,14 @@ main() {
                 exit 1
         fi
 
+        tmpfile=$(mktemp)
         while true; do
                 date
-                curl -#L http://ifconfig.io/ip | tee "$repository/ip.address"
+                curl -#L http://ifconfig.io/ip | tee $tmpfile
+                if [ $? -eq 0 ]; then
+                        echo "CURL executed successfully"
+                        cp $tmpfile "$repository/ip.address"
+                fi
                 git -C $repository add ip.address
                 git -C $repository commit -m "Updates IP address"
                 git -C $repository push origin master
